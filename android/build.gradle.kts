@@ -1,5 +1,16 @@
 // android/build.gradle.kts
 
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.9.1")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
+    }
+}
+
 allprojects {
     repositories {
         // 添加阿里云镜像（放在前面优先使用）
@@ -13,7 +24,6 @@ allprojects {
     }
 }
 
-// 其余部分保持不变
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
