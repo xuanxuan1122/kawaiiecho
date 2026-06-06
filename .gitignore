@@ -1,0 +1,26 @@
+# Flutter
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.lock
+
+# Android
+android/.gradle/
+android/app/build/
+android/local.properties
+*.iml
+
+# Linux
+linux/flutter/ephemeral/
+linux/CMakeCache.txt
+linux/CMakeFiles/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 其他
+.DS_Store
+*.log
