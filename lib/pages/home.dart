@@ -11,6 +11,7 @@ import 'settings.dart';
 import 'playlist_queue.dart';
 import 'playlist_manager.dart';
 import 'playlist_detail.dart';
+import '../for_android/init.dart';
 
 class HomePage extends StatefulWidget {
   final String? initialFile;
@@ -25,6 +26,11 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    if (Platform.isAndroid) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        initAndroidFeatures();  // 这里调用权限和音频服务初始化
+      });
+    }
     if (widget.initialFile != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openFile(widget.initialFile!);
