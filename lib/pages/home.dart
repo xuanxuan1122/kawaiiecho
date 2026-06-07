@@ -162,6 +162,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(width: 12),
           _buildCircleIcon(context, Icons.folder_open, '添加文件夹', settings,
               onTap: () => _showFolderInputDialog(context, settings, listProvider)),
+          const SizedBox(width: 8),
           _buildCircleIcon(context, Icons.playlist_play, '歌单管理', settings,
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlaylistManagerPage()))),
           const SizedBox(width: 8),

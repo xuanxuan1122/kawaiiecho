@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/song.dart';
 import '../services/audio.dart';
 import 'dart:math';
-import 'package:media_kit/media_kit.dart';
+import 'package:just_audio/just_audio.dart';
 
 enum PlayMode {
   repeat,      // 列表循环
@@ -30,6 +30,8 @@ class MusicProvider extends ChangeNotifier {
   Duration get duration => _duration;
   bool get isPlaying => _isPlaying;
   PlayMode get playMode => _playMode;
+
+  bool _isProcessingCompletion = false;
 
   // 获取播放模式图标
   IconData get playModeIcon {
@@ -64,36 +66,53 @@ class MusicProvider extends ChangeNotifier {
   }
 
   void _initListeners() {
-    _audioService.player.stream.position.listen((pos) {
+    // 监听时长变化
+    _audioService.player.durationStream.listen((dur) {
+      if (dur != null) {
+        _duration = dur;
+        notifyListeners();
+      }
+    });
+
+    // 监听播放位置变化
+    _audioService.player.positionStream.listen((pos) {
       _position = pos;
       notifyListeners();
     });
-    _audioService.player.stream.duration.listen((dur) {
-      _duration = dur;
-      notifyListeners();
-    });
-    _audioService.player.stream.playing.listen((playing) {
+
+    // 监听播放/暂停状态变化
+    _audioService.player.playingStream.listen((playing) {
       _isPlaying = playing;
       notifyListeners();
     });
-    _audioService.player.stream.completed.listen((_) {
-      _onPlaybackCompleted();
+
+    // 监听播放器状态变化（关键：避免 completed 事件重复）
+    _audioService.player.playerStateStream.listen((state) {
+      // 检查播放器是否完成播放（Natural 结束）
+      if (state.processingState == ProcessingState.completed) {
+        print("Playback completed"); // 用于调试
+        _onPlaybackCompleted();
+      }
     });
   }
 
   // 播放完成时的处理
   void _onPlaybackCompleted() {
-    switch (_playMode) {
-      case PlayMode.repeatOne:
-        // 单曲循环：重新播放当前歌曲
-        _replayCurrent();
-        break;
-      case PlayMode.repeat:
-      case PlayMode.shuffle:
-      case PlayMode.sequential:
-        // 自动播放下一首
-        nextTrack();
-        break;
+    if (_isProcessingCompletion) return;  // 防止重入
+    _isProcessingCompletion = true;
+    try {
+      switch (_playMode) {
+        case PlayMode.repeatOne:
+          _replayCurrent();
+          break;
+        case PlayMode.repeat:
+        case PlayMode.shuffle:
+        case PlayMode.sequential:
+          nextTrack();
+          break;
+      }
+    } finally {
+      _isProcessingCompletion = false;
     }
   }
 
@@ -107,6 +126,7 @@ class MusicProvider extends ChangeNotifier {
         _playMode = PlayMode.shuffle;
         break;
       case PlayMode.shuffle:
+        _restoreOriginalPlaylist();
         _playMode = PlayMode.sequential;
         break;
       case PlayMode.sequential:
@@ -173,6 +193,7 @@ class MusicProvider extends ChangeNotifier {
   Future<void> _playCurrent() async {
     if (_currentIndex < 0 || _currentIndex >= _playlist.length) return;
     final song = _playlist[_currentIndex];
+    await _audioService.stop();
     await _audioService.playSong(song);
   }
 
@@ -191,6 +212,8 @@ class MusicProvider extends ChangeNotifier {
   }
 
   Future<void> nextTrack() async {
+    print("nextTrack called, currentIndex=$_currentIndex, playlist.length=${_playlist.length}");
+
     if (_playlist.isEmpty) return;
 
     if (_playMode == PlayMode.shuffle) {
